@@ -1,2 +1,2 @@
-# Drone_GestureRecognition
+# Drone Gesture Recognition
  
