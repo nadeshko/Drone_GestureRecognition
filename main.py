@@ -1,32 +1,11 @@
-import os
-import sys
-import cv2
-import random
-import numpy as np
-import tensorflow as tf
-#import dataset_visualization # run dataset visualization
-
-
-from tensorflow.python.keras.layers import *
-from tensorflow.python.keras.models import Sequential
-#from tensorflow.python.keras.utils import plot_model
-from tensorflow.python.keras.callbacks import EarlyStopping
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
-from sklearn.preprocessing import OneHotEncoder
-
-# setting seed constant
-seed = 25
-np.random.seed(seed)
-random.seed(seed)
-#tf.random.set_seed(seed)
-
-# image processing
-h, w = 32, 64
-DATASET_DIR = 'UAV-Gesture1'
-CLASS_LIST = ['BOXING','CLAPPING','HITTING','JOGGING','KICKING',
-              'RUNNING','STABBING','WALKING', 'WAVING']
-SEQUENCE = 20
+from model import models
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+import cv2
+import os
+#import dataset_visualization # run dataset visualization
 
 def get_frames(path):
     """
@@ -73,31 +52,71 @@ def make_dataset():
 
     return features, labels, vid_paths
 
-def to_categorical(labels):
-    # to-categorical
-    label_encoder = LabelEncoder()
-    int_encoded = label_encoder.fit_transform(labels)
-    one_hot_encoder = OneHotEncoder(sparse=False)
-    int_encoded = int_encoded.reshape(len(int_encoded), 1)
-    one_hot_encoded = one_hot_encoder.fit_transform(int_encoded)
-    return one_hot_encoded
+def plot_metric(training_history, metric1, metric2, plot_name):
+    '''
+    This function will plot the metrics passed to it in a graph.
+    Args:
+        model_training_history: A history object containing a record of training and validation
+                                loss values and metrics values at successive epochs
+        metric_name_1:          The name of the first metric that needs to be plotted in the graph.
+        metric_name_2:          The name of the second metric that needs to be plotted in the graph.
+        plot_name:              The title of the graph.
+    '''
 
-def LRCN_model():
-    LRCN = Sequential()
+    # Get metric values using metric names as identifiers.
+    metric_1 = training_history.history[metric1]
+    metric_2 = training_history.history[metric2]
 
-    # model architecture
-    LRCN.add()
+    # Construct a range object which will be used as x-axis (horizontal plane) of the graph.
+    epochs = range(len(metric_1))
+
+    # Plot the Graph.
+    plt.plot(epochs, metric_1, 'blue', label=metric1)
+    plt.plot(epochs, metric_2, 'red', label=metric2)
+
+    # Add title to the plot.
+    plt.title(str(plot_name))
+
+    # Add legend to the plot.
+    plt.legend()
 
 def main():
+    from utils import Utils
+    utils = Utils()
+
     feature, labels, paths = make_dataset()
-    one_hot_label = to_categorical(labels)
+    one_hot_label = utils.to_categorical(labels)
+    print(one_hot_label)
     feature_train, feature_test, label_train, label_test = train_test_split(
         feature, one_hot_label, test_size=0.3, shuffle=True, random_state=seed)
     
-    #choose model
-    LRCN_model()
+    # choose model
+    model = models(seed)
+    LRCN_model = model.create_LRCN(SEQUENCE, h, w, CLASS_LIST)
+    LRCN_history, test_loss, test_acc = model.compile_model(
+        LRCN_model, epochs, feature_train, feature_test, label_test, label_test)
+
+    # Saving model
+    file_name = f'LRCN_model__Loss_{test_loss}__Acc_{test_acc}'
+    LRCN_model.save(file_name)
+
+    plot_metric(LRCN_history, 'loss', 'val_loss', 'Total Loss vs Total Validation Loss')
+    plot_metric(LRCN_history, 'accuracy', 'val_accuracy', 'Total Accuracy vs Total Validation Accuracy')
 
 if __name__ == '__main__':
+    # setting seed constant
+    seed = 25
+    np.random.seed(seed)
+    random.seed(seed)
+
+    # image processing
+    h, w = 32, 64
+    DATASET_DIR = 'UAV-Gesture1'
+    CLASS_LIST = ['BOXING', 'CLAPPING', 'HITTING', 'JOGGING', 'KICKING',
+                  'RUNNING', 'STABBING', 'WALKING', 'WAVING']
+    SEQUENCE = 20
+
+    epochs = 20
     main()
 
 
