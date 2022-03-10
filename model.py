@@ -4,12 +4,12 @@ from keras.layers import *
 import tensorflow as tf
 
 class models():
-    def __init__(self, seed):
+    def __init__(self):
         # initialize sequential model
         self.model = Sequential()
-        tf.random.set_seed(seed)
+        #tf.random.set_seed(seed)
 
-    def create_LRCN(self, SEQUENCE=20, h=int(), w=int(), CLASS_LIST=list()):
+    def create_LRCN(self, SEQUENCE, h, w, CLASS_LIST):
         """
         Function to add on the model architecture
         :param SEQUENCE: length of video
@@ -18,23 +18,23 @@ class models():
         :return: returns LRCN model
         """
         self.model.add(TimeDistributed(Conv2D(16, (3, 3), padding='same', activation='relu'),
-                                       input_shape= (SEQUENCE, h, w, 3)))
-        self.model.add(TimeDistributed(MaxPooling2D(4)))
-        self.model.add(TimeDistributed(Dropout(0.25)))
+                                       input_shape= (SEQUENCE, h, w, 3), name='Conv1'))
+        self.model.add(TimeDistributed(MaxPooling2D(4), name='MaxPool'))
+        self.model.add(TimeDistributed(Dropout(0.25), name='Dropout'))
 
-        self.model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same', activation='relu')))
-        self.model.add(TimeDistributed(MaxPooling2D(4)))
-        self.model.add(TimeDistributed(Dropout(0.2)))
+        self.model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same', activation='relu'), name='Conv2'))
+        self.model.add(TimeDistributed(MaxPooling2D(4), name='MaxPool'))
+        self.model.add(TimeDistributed(Dropout(0.2), name='Dropout'))
 
-        self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu')))
-        self.model.add(TimeDistributed(MaxPooling2D(2)))
-        self.model.add(TimeDistributed(Dropout(0.25)))
+        self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu'), name='Conv3'))
+        self.model.add(TimeDistributed(MaxPooling2D(2), name='MaxPool'))
+        self.model.add(TimeDistributed(Dropout(0.25), name='Dropout'))
 
-        self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu')))
-        self.model.add(TimeDistributed(MaxPooling2D(2)))
-        self.model.add(TimeDistributed(Dropout(0.1))) #DEBUG?
+        #self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu')))
+        #self.model.add(TimeDistributed(MaxPooling2D(2)))
+        #self.model.add(TimeDistributed(Dropout(0.1))) #DEBUG?
 
-        self.model.add(TimeDistributed(Flatten()))
+        self.model.add(TimeDistributed(Flatten(), name='Flatten'))
 
         self.model.add(LSTM(32))
 
@@ -51,8 +51,11 @@ class models():
         early_stop_callback = EarlyStopping(monitor='val_loss', patience=15,
                                             mode='min', restore_best_weights=True)
 
-        model_history = model.fit(x=feature_train, y=label_train,
-                                      batch_size=200, epochs=epochs,
+        feat_train = tf.stack(feature_train)
+        lab_train = tf.stack(label_train)
+
+        model_history = model.fit(x=feat_train, y=lab_train,
+                                      batch_size=4, epochs=epochs,
                                       shuffle=True, validation_split=0.2,
                                       callbacks=[early_stop_callback])
 

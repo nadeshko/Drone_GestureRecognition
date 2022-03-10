@@ -79,6 +79,7 @@ def plot_metric(training_history, metric1, metric2, plot_name):
 
     # Add legend to the plot.
     plt.legend()
+    plt.show()
 
 def main():
     from utils import Utils
@@ -86,15 +87,14 @@ def main():
 
     feature, labels, paths = make_dataset()
     one_hot_label = utils.to_categorical(labels)
-    print(one_hot_label)
     feature_train, feature_test, label_train, label_test = train_test_split(
-        feature, one_hot_label, test_size=0.3, shuffle=True, random_state=seed)
-    
+        feature, one_hot_label, test_size=0.25, shuffle=True, random_state=seed)
+
     # choose model
-    model = models(seed)
+    model = models()
     LRCN_model = model.create_LRCN(SEQUENCE, h, w, CLASS_LIST)
     LRCN_history, test_loss, test_acc = model.compile_model(
-        LRCN_model, epochs, feature_train, feature_test, label_test, label_test)
+        LRCN_model, epochs, feature_train, feature_test, label_train, label_test)
 
     # Saving model
     file_name = f'LRCN_model__Loss_{test_loss}__Acc_{test_acc}'
