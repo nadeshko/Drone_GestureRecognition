@@ -14,54 +14,67 @@ def get_frames(path):
     :param path: path of video
     :return: list of frames of every video
     """
+
     frame_list = []
+
+    # set capture object and count frames
     vid_reader = cv2.VideoCapture(path)
     frame_count = int(vid_reader.get(cv2.CAP_PROP_FRAME_COUNT))
     frame_skip = max(int(frame_count/SEQUENCE), 1)
+
+    # extracting frames
     for i in range(SEQUENCE):
+        # skip a couple of frames (don't need everything)
         vid_reader.set(cv2.CAP_PROP_POS_FRAMES, i*frame_skip)
         success, frame = vid_reader.read()
+        # if no more frames, finish
         if not success:
             break
         resized_frame = cv2.resize(frame, (h, w))
         normalized_frame = resized_frame / 255
         frame_list.append(normalized_frame)
-    vid_reader.release()
+    vid_reader.release() # release object
+
     return frame_list
 
 def make_dataset():
+    """
+    Function to prepare dataset for training
+    :return: extracted features, labels and video paths from video frames
+    """
 
+    # initialize required lists, same amt of features and labels
     feature   = []
     labels    = []
     vid_paths = []
 
-    # go through all classes in CLASS_LIST
+    # go through all classes in CLASS_LIST and get features and labels
     for idx, class_name in enumerate(CLASS_LIST):
-        print(f'Extracting Data from: {class_name}')
+        print(f'Extracting Data from: {class_name}') # show progress
         files = os.listdir(os.path.join(DATASET_DIR, class_name))
         for name in files:
             path = os.path.join(DATASET_DIR, class_name, name)
+            # send path to get_frames from specific videos
             frames = get_frames(path)
             if len(frames) == SEQUENCE:
                 feature.append(frames)
                 labels.append(idx)
                 vid_paths.append(path)
 
+    # convert features and labels into arrays
     features = np.asarray(feature)
     labels = np.array(labels)
 
     return features, labels, vid_paths
 
-def plot_metric(training_history, metric1, metric2, plot_name):
-    '''
-    This function will plot the metrics passed to it in a graph.
-    Args:
-        model_training_history: A history object containing a record of training and validation
-                                loss values and metrics values at successive epochs
-        metric_name_1:          The name of the first metric that needs to be plotted in the graph.
-        metric_name_2:          The name of the second metric that needs to be plotted in the graph.
-        plot_name:              The title of the graph.
-    '''
+def plot_graph(training_history, metric1, metric2, plot_name):
+    """
+    Function to plot and show graph of accuracy and loss
+    :param training_history: record of training and validation (acc/loss)
+    :param metric1: first metric
+    :param metric2: second metric
+    :param plot_name: name of plot
+    """
 
     # Get metric values using metric names as identifiers.
     metric_1 = training_history.history[metric1]
@@ -70,38 +83,47 @@ def plot_metric(training_history, metric1, metric2, plot_name):
     # Construct a range object which will be used as x-axis (horizontal plane) of the graph.
     epochs = range(len(metric_1))
 
-    # Plot the Graph.
+    # Plotting
     plt.plot(epochs, metric_1, 'blue', label=metric1)
     plt.plot(epochs, metric_2, 'red', label=metric2)
 
-    # Add title to the plot.
+    # Add title
     plt.title(str(plot_name))
 
-    # Add legend to the plot.
+    # Legends
     plt.legend()
     plt.show()
 
 def main():
+    """
+    main function that trains and evaluates model to get accuracy and loss of model
+    :return: ---
+    """
+
+    # initiate required utilities
     from utils import Utils
     utils = Utils()
 
+    # prepare dataset
     feature, labels, paths = make_dataset()
-    one_hot_label = utils.to_categorical(labels)
+    one_hot_label = utils.to_categorical(labels) # convert labels to one_hot format
     feature_train, feature_test, label_train, label_test = train_test_split(
         feature, one_hot_label, test_size=0.25, shuffle=True, random_state=seed)
 
+    # initiate model class
+    model = models(seed)
     # choose model
-    model = models()
     LRCN_model = model.create_LRCN(SEQUENCE, h, w, CLASS_LIST)
     LRCN_history, test_loss, test_acc = model.compile_model(
         LRCN_model, epochs, feature_train, feature_test, label_train, label_test)
 
-    # Saving model
+    # saving model
     file_name = f'LRCN_model__Loss_{test_loss}__Acc_{test_acc}'
     LRCN_model.save(file_name)
 
-    plot_metric(LRCN_history, 'loss', 'val_loss', 'Total Loss vs Total Validation Loss')
-    plot_metric(LRCN_history, 'accuracy', 'val_accuracy', 'Total Accuracy vs Total Validation Accuracy')
+    # plotting loss and accuracy
+    plot_graph(LRCN_history, 'loss', 'val_loss', 'Total Loss vs Total Validation Loss')
+    plot_graph(LRCN_history, 'accuracy', 'val_accuracy', 'Total Accuracy vs Total Validation Accuracy')
 
 if __name__ == '__main__':
     # setting seed constant
@@ -109,15 +131,17 @@ if __name__ == '__main__':
     np.random.seed(seed)
     random.seed(seed)
 
-    # image processing
-    h, w = 32, 64
-    DATASET_DIR = 'UAV-Gesture1'
-    CLASS_LIST = ['BOXING', 'CLAPPING', 'HITTING', 'JOGGING', 'KICKING',
-                  'RUNNING', 'STABBING', 'WALKING', 'WAVING']
-    SEQUENCE = 20
+    # determine video size, directory and classes
+    h, w = 64, 128
+    DATASET_DIR = 'UAV-Gesture'
+    CLASS_LIST = ['BOXING', 'CLAPPING', 'HITTING', 'JOGGING-F', 'JOGGING-SIDE', 'KICKING',
+                  'RUNNING-F', 'RUNNING-SIDE', 'STABBING', 'WALKING-F', 'WALKING-SIDE', 'WAVING']
+    # frames to insert to model
+    SEQUENCE = 20 # skipping every few frames
 
-    epochs = 20
-    main()
+    # no. of iterations
+    epochs = 25
+    main() # running main
 
 
 

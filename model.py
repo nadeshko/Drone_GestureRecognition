@@ -4,19 +4,20 @@ from keras.layers import *
 import tensorflow as tf
 
 class models():
-    def __init__(self):
+    def __init__(self, seed):
         # initialize sequential model
         self.model = Sequential()
-        #tf.random.set_seed(seed)
+        tf.random.set_seed(seed) # set seed constant (for same results)
 
     def create_LRCN(self, SEQUENCE, h, w, CLASS_LIST):
         """
-        Function to add on the model architecture
+        Function to create model architecture
         :param SEQUENCE: length of video
         :param h: video height
         :param w: video width
         :return: returns LRCN model
         """
+
         self.model.add(TimeDistributed(Conv2D(16, (3, 3), padding='same', activation='relu'),
                                        input_shape= (SEQUENCE, h, w, 3), name='Conv1'))
         self.model.add(TimeDistributed(MaxPooling2D(4), name='MaxPool'))
@@ -43,19 +44,34 @@ class models():
         return self.model
 
     def compile_model(self, model, epochs, feature_train, feature_test, label_train, label_test):
+        """
+        Function to compile and train model
+        :param model: model used for training
+        :param epochs: no. of iterations
+        :param feature_train: feature used for training
+        :param feature_test: feature used for testing
+        :param label_train: feature labels used for training
+        :param label_test: feature labels used for testing
+        :return: model history, testing accuracy and loss
+        """
+
+        # compile model
         model.compile(
             loss='categorical_crossentropy',
             optimizer='Adam',
             metrics=['accuracy'])
 
+        # create instance of early stopping callback
         early_stop_callback = EarlyStopping(monitor='val_loss', patience=15,
                                             mode='min', restore_best_weights=True)
 
+        # stack list of tensors into one higher rank tensor
         feat_train = tf.stack(feature_train)
         lab_train = tf.stack(label_train)
 
+        # training model
         model_history = model.fit(x=feat_train, y=lab_train,
-                                      batch_size=4, epochs=epochs,
+                                      batch_size=5, epochs=epochs,
                                       shuffle=True, validation_split=0.2,
                                       callbacks=[early_stop_callback])
 
