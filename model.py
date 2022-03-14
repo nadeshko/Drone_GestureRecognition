@@ -18,28 +18,39 @@ class models():
         :return: returns LRCN model
         """
 
-        self.model.add(TimeDistributed(Conv2D(16, (3, 3), padding='same', activation='relu'),
-                                       input_shape= (SEQUENCE, h, w, 3), name='Conv1'))
-        self.model.add(TimeDistributed(MaxPooling2D(4), name='MaxPool'))
-        self.model.add(TimeDistributed(Dropout(0.25), name='Dropout'))
+        # time-distributed wrap the layers together and consider them in the temporal dimension
+        self.model.add(TimeDistributed(Conv2D(16, (7, 7), padding='same', activation='relu'),   # (SEQ| h | w | Conv)
+                                       input_shape= (SEQUENCE, h, w, 3)))                       # (15, 128, 96,  16)  256 256
+        #self.model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same', activation='relu')))
+        self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,  32, 24,  16)  64 64
+        self.model.add(TimeDistributed(Dropout(0.25)))                                          # (15,  32, 24,  16)
 
-        self.model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same', activation='relu'), name='Conv2'))
-        self.model.add(TimeDistributed(MaxPooling2D(4), name='MaxPool'))
-        self.model.add(TimeDistributed(Dropout(0.2), name='Dropout'))
+        self.model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same', activation='relu')))  # (15,  32, 24,  32)
+        self.model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same', activation='relu')))
+        self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,   8,  6,  32) 16 16
+        self.model.add(TimeDistributed(Dropout(0.2)))                                           # (15,   8,  6,  32)
 
-        self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu'), name='Conv3'))
-        self.model.add(TimeDistributed(MaxPooling2D(2), name='MaxPool'))
-        self.model.add(TimeDistributed(Dropout(0.25), name='Dropout'))
+        self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu')))  # (15,   8,  6,  64)
+        self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu')))
+        self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,   4,  3,  64) 4 4
+        self.model.add(TimeDistributed(Dropout(0.2)))                                           # (15,   4,  3,  64)
 
-        #self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu')))
-        #self.model.add(TimeDistributed(MaxPooling2D(2)))
-        #self.model.add(TimeDistributed(Dropout(0.1))) #DEBUG?
+        #self.model.add(TimeDistributed(Conv2D(256, (3, 3), padding='same', activation='relu')))  # (15,   8,  6,  64)
+        #self.model.add(TimeDistributed(Conv2D(256, (3, 3), padding='same', activation='relu')))
+        #self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,   4,  3,  64) 2 2
+        #self.model.add(TimeDistributed(Dropout(0.2)))                                           # (15,   4,  3,  64)
 
-        self.model.add(TimeDistributed(Flatten(), name='Flatten'))
+        #self.model.add(TimeDistributed(Conv2D(512, (3, 3), padding='same', activation='relu'))) # (15,   4,  3,  64)
+        #self.model.add(TimeDistributed(Conv2D(512, (3, 3), padding='same', activation='relu')))
+        #self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,   2,  1,  64) 1 1
+        #self.model.add(TimeDistributed(Dropout(0.1))) #DEBUG?                                  # (15,   2,  1,  64)
 
-        self.model.add(LSTM(32))
+        self.model.add(TimeDistributed(Flatten()))                                              # (15, 128)
+        self.model.add(Dropout(0.5))
 
-        self.model.add(Dense(len(CLASS_LIST), activation='softmax'))
+        self.model.add(LSTM(64))                                                                # (32)
+
+        self.model.add(Dense(len(CLASS_LIST), activation='softmax'))                            # (12)
 
         return self.model
 
@@ -71,7 +82,7 @@ class models():
 
         # training model
         model_history = model.fit(x=feat_train, y=lab_train,
-                                      batch_size=5, epochs=epochs,
+                                      batch_size=8, epochs=epochs,
                                       shuffle=True, validation_split=0.2,
                                       callbacks=[early_stop_callback])
 
@@ -80,6 +91,6 @@ class models():
 
         # Evaluate Accuracy
         test_loss, test_acc = model.evaluate(feature_test, label_test, verbose=2)
-        print(f'\Test Accuracy: {test_acc}')
+        print(f'Test Accuracy: {test_acc}')
 
         return model_history, test_loss, test_acc

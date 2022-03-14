@@ -112,5 +112,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-UAV-Gesture*
-Unused datas*
+datasets*
+image_array*
