@@ -47,9 +47,10 @@ def main():
     dataset = datasets(h, w, DATASET_DIR, CLASS_LIST, SEQUENCE)
     # create and save dataset if doesn't exist
     if not os.path.exists(f'image_array/{h}x{w}_features.npy'):
-        dataset.make_dataset()
-    # load dataset
-    feature, labels = dataset.load_dataset()
+        feature, labels = dataset.make_dataset()
+    else:
+        # load dataset
+        feature, labels = dataset.load_dataset()
     one_hot_label = utils.to_categorical(labels)  # convert labels to one_hot format
 
     # split datasets for training and testing
@@ -89,10 +90,6 @@ if __name__ == '__main__':
     epochs = 50
     main() # running main
 
-    """
-    https: // github.com / faaip / OpenPose - Gesture - Recognition / blob / master / run_openpose.py
-    https: // pythonawesome.com / a - gesture - recognition - system -
-    with-openpose /"""
 
 
 

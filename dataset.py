@@ -19,7 +19,7 @@ class datasets():
 
     def get_frames(self, path):
         """
-        Function extracts frames of video after it is resized and normalized
+        Function extracts frames of video after it is resize and normalized
         in the form of a list.
         :param path: path of video
         :return: list of frames of every video
@@ -83,6 +83,8 @@ class datasets():
         self.labels = np.array(self.labels)
 
         self.save_dataset()
+
+        return self.features, self.labels
 
 
 

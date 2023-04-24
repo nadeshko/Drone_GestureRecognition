@@ -1,7 +1,10 @@
+#from tensorflow.python.keras.utils.vis_utils import plot_model
 from tensorflow.python.keras.callbacks import EarlyStopping
 from tensorflow.python.keras.models import Sequential
-from keras.layers import *
+#from tensorflow.python.keras.layers import *
 import tensorflow as tf
+from keras.utils.vis_utils import plot_model
+from keras.layers import *
 
 class models():
     def __init__(self, seed):
@@ -19,38 +22,29 @@ class models():
         """
 
         # time-distributed wrap the layers together and consider them in the temporal dimension
-        self.model.add(TimeDistributed(Conv2D(16, (7, 7), padding='same', activation='relu'),   # (SEQ| h | w | Conv)
-                                       input_shape= (SEQUENCE, h, w, 3)))                       # (15, 128, 96,  16)  256 256
-        #self.model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same', activation='relu')))
-        self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,  32, 24,  16)  64 64
-        self.model.add(TimeDistributed(Dropout(0.25)))                                          # (15,  32, 24,  16)
-
-        self.model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same', activation='relu')))  # (15,  32, 24,  32)
+        self.model.add(TimeDistributed(Conv2D(32, (7, 7), padding='same', activation='relu'),
+                                       input_shape= (SEQUENCE, h, w, 3)))
         self.model.add(TimeDistributed(Conv2D(32, (3, 3), padding='same', activation='relu')))
-        self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,   8,  6,  32) 16 16
-        self.model.add(TimeDistributed(Dropout(0.2)))                                           # (15,   8,  6,  32)
+        self.model.add(TimeDistributed(MaxPooling2D(4)))
 
-        self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu')))  # (15,   8,  6,  64)
         self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu')))
-        self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,   4,  3,  64) 4 4
-        self.model.add(TimeDistributed(Dropout(0.2)))                                           # (15,   4,  3,  64)
+        self.model.add(TimeDistributed(Conv2D(64, (3, 3), padding='same', activation='relu')))
+        self.model.add(TimeDistributed(MaxPooling2D(2)))
 
-        #self.model.add(TimeDistributed(Conv2D(256, (3, 3), padding='same', activation='relu')))  # (15,   8,  6,  64)
-        #self.model.add(TimeDistributed(Conv2D(256, (3, 3), padding='same', activation='relu')))
-        #self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,   4,  3,  64) 2 2
-        #self.model.add(TimeDistributed(Dropout(0.2)))                                           # (15,   4,  3,  64)
+        self.model.add(TimeDistributed(Conv2D(128, (3, 3), padding='same', activation='relu')))
+        self.model.add(TimeDistributed(Conv2D(128, (3, 3), padding='same', activation='relu')))
+        self.model.add(TimeDistributed(MaxPooling2D(2)))
 
-        #self.model.add(TimeDistributed(Conv2D(512, (3, 3), padding='same', activation='relu'))) # (15,   4,  3,  64)
-        #self.model.add(TimeDistributed(Conv2D(512, (3, 3), padding='same', activation='relu')))
-        #self.model.add(TimeDistributed(MaxPooling2D(2)))                                        # (15,   2,  1,  64) 1 1
-        #self.model.add(TimeDistributed(Dropout(0.1))) #DEBUG?                                  # (15,   2,  1,  64)
+        self.model.add(TimeDistributed(Conv2D(128, (3, 3), padding='same', activation='relu')))
+        self.model.add(TimeDistributed(Conv2D(128, (3, 3), padding='same', activation='relu')))
+        self.model.add(TimeDistributed(MaxPooling2D(2)))
 
-        self.model.add(TimeDistributed(Flatten()))                                              # (15, 128)
+
+        self.model.add(TimeDistributed(Flatten()))
         self.model.add(Dropout(0.5))
+        self.model.add(LSTM(128))
 
-        self.model.add(LSTM(64))                                                                # (32)
-
-        self.model.add(Dense(len(CLASS_LIST), activation='softmax'))                            # (12)
+        self.model.add(Dense(len(CLASS_LIST), activation='softmax'))
 
         return self.model
 
@@ -85,6 +79,10 @@ class models():
                                       batch_size=8, epochs=epochs,
                                       shuffle=True, validation_split=0.2,
                                       callbacks=[early_stop_callback])
+
+        # plot LRCN model
+        plot_model(model, to_file='model results/plot/LRCN_model.png',
+                   show_shapes=True, show_layer_names=True)
 
         # Show model summary
         model.summary()  # DEBUG
